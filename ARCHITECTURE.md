@@ -179,19 +179,24 @@ Die Anwendung ist eine statische Seite. `next.config.ts` schaltet den statischen
 
 | Umgebung | Build | Ergebnis |
 | --- | --- | --- |
-| Cloudflare Pages | `npx next build` (CF_PAGES=1 ist gesetzt) | `out/` — statische Seite |
-| lokal / Vorschau | `npm run build` | Server-Build (identischer Code) |
+| Cloudflare Pages | `npm run build` (`CF_PAGES=1` ist gesetzt) | `out/` — statische Seite |
+| lokal, Direkt-Upload | `NEXT_STATIC_EXPORT=1 npm run build` | `out/` — statische Seite |
+| Vorschau in dieser Sandbox | `npm run build` + `npm start` | Server-Build, identischer Code |
 
-Einstellungen im Cloudflare-Dashboard (oder in `wrangler.toml`):
+Einstellungen im Cloudflare-Dashboard (Git-Verbindung oder Direct Upload):
 
 ```
-Build-Befehl:        npx next build
+Framework preset:    Next.js (Static HTML Export)
+Build-Befehl:        NEXT_STATIC_EXPORT=1 npm run build
 Build-Ausgabeordner: out
-Umgebungsvariablen:  keine
+Umgebungsvariablen:  NEXT_STATIC_EXPORT=1   (Sicherheit, falls CF_PAGES fehlt)
 ```
 
-Zusätzlich erzwingt `NEXT_STATIC_EXPORT=1 npx next build` denselben statischen Export,
-zum Beispiel für `wrangler pages deploy out`.
+Der Build-Befehl mit `NEXT_STATIC_EXPORT=1` ist absichtlich gesetzt und nicht nur der
+einfache `npm run build`: Cloudflare setzt zwar `CF_PAGES=1`, aber die explizite Variable
+macht den Export unabhängig von der Erkennung — ein Build ohne sie erzeugte einen
+Server-Build, und dann fehlte das Verzeichnis `out/`. Für einen Direkt-Upload von
+lokal gilt dasselbe: `NEXT_STATIC_EXPORT=1 npm run build && npx wrangler pages deploy out`.
 
 `public/_headers` liegt im Ausgabeordner und setzt für Cloudflare Pages die Antwortköpfe:
 `/api/health` als JSON ohne Zwischenspeicherung, Bilder und `_next/static/*` als

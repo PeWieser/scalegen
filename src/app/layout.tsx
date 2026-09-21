@@ -1,29 +1,26 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+/**
+ * Geist Sans und Geist Mono kommen aus dem Paket `geist` (lokale Schriftdateien).
+ * Dadurch braucht der Build keinen Schrift-Download — wichtig für CI-Builds.
+ * Die Variablen --font-geist-sans / --font-geist-mono stehen in globals.css.
+ */
 
 export const metadata: Metadata = {
   title: "Scale Generator — technische Skalen für Messgeräte, Frontplatten und CNC",
   description:
-    "Parametrische Skalen erzeugen und als SVG, DXF, STL und OBJ exportieren. Kreis, Halbkreis, Kreisbogen und gerade Linie — die Exporte sind exakt die Vorschau.",
+    "Parametrische Skalen erzeugen und als SVG, DXF, STL und OBJ exportieren. Kreis, Halbkreis, Kreisbogen und gerade Linie — die Exporte sind exakt die Vorschau. Läuft vollständig im Browser.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="de">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-[var(--surface-0)] text-[var(--text)] antialiased`}
+        className={`${GeistSans.variable} ${GeistMono.variable} bg-[var(--surface-0)] text-[var(--text)] antialiased`}
       >
         {children}
       </body>
