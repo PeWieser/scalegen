@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Eloxiertes Aluminium — Grundfläche und Erhebungen */
+  --surface-0: #0b0e12;
+  --surface-1: #11151b;
+  --surface-2: #161b22;
+  --surface-3: #1c222b;
+  --line: #20272f;
+  --line-strong: #2c343e;
+
+  /* Getönte Neutrale, kein reines Grau */
+  --text: #e7edf3;
+  --text-muted: #8a97a6;
+  --text-faint: #5e6a78;
+
+  /* EINE Akzentfarbe: Fokus, Auswahl, Primäraktion */
+  --accent: #2f6bff;
+  --accent-hover: #4a80ff;
+  --accent-active: #2559d8;
+
+  /* Zustände, nie Dekoration */
+  --warn: #d8a13a;
+
+  --tick: #93a2b4;
+  --tick-hover: #d6e2f0;
+}
+
+
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono,
+[class*="font-[family-name:var(--font-mono)]"],
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: none;
+}
+
+/* Teilstriche: Hover zeigt, was gewählt wird. 90 ms, keine Bewegung. */
+.scale-tick {
+  fill: var(--tick);
+  transition: fill 90ms linear;
+}
+
+.scale-tick:hover {
+  fill: var(--tick-hover);
+  cursor: pointer;
+}
+
+.scale-tick--selected,
+.scale-tick--selected:hover {
+  fill: var(--accent);
+}
+
+.ruler-text {
+  fill: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.callout-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Schmale Rollbalken, passend zum Panel */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid var(--surface-0);
+  border-radius: 999px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
