@@ -1,101 +1,181 @@
-# DESIGN.md – Scale Generator
+# DESIGN.md — Scale Generator
 
-> „Ich möchte eine präzise technische Skala erzeugen und als CAD-/CAM-taugliche Datei exportieren.“
-
-Dieses Dokument begründet jede Designentscheidung. Es ist bewusst auch eine Liste dessen,
-was **nicht** gebaut wurde – denn Fokus heißt Nein sagen.
+Gestaltungsgrundsätze, Entscheidungen und bewusste Auslassungen.
 
 ---
 
-## 1. Der eine Auftrag
+## 1. Was das Produkt ist — und was nicht
 
-Das Produkt löst genau ein Problem. Alles im UI ist auf den 30-Sekunden-Pfad ausgerichtet:
+> „Ich möchte eine präzise technische Skala erzeugen und als CAD-/CAM-taugliche Datei exportieren."
 
-1. **Halbkreis** wählen (Skalentyp, erste Sektion links)
-2. **0 bis 80** eingeben (Wertebereich, zweite Sektion)
-3. **Haupt-/Unterteilung** festlegen (dritte und vierte Sektion)
-4. **Exportieren → DXF → herunterladen** (blauer Button rechts oben, `Strg+E`)
+Das ist der gesamte Auftrag. Der Scale Generator erzeugt **eine** Sache: parametrische
+Teilstrichskalen für Messgeräte, Frontplatten, Drehknöpfe, Instrumente und CNC/CAM.
+Alles andere ist ausgeschlossen.
 
-Die Reihenfolge der Sektionen im Parameterpanel ist die Reihenfolge, in der ein Mensch über eine Skala nachdenkt:
-Form → Maße → Werte → Teilung → Beschriftung. Es gibt keine Tabs, keine Unterdialoge, keine zweite Ebene.
+| Es ist | Es ist nicht |
+| --- | --- |
+| Ein Skalen-Rechner mit Export | Ein allgemeiner SVG-Editor |
+| Ein Werkzeug für Millimeter und Werte | Ein Design-/Grafikprogramm |
+| Eine Bühne: Eingabe links, Ergebnis rechts | Ein Dashboard mit Projekten und Diagrammen |
+| Ein Geometrieerzeuger (Vektor + 3D) | Ein CAD-System mit Bemaßung und Konstruktion |
 
-## 2. Bühne: links Eingabe, rechts Ergebnis
+**Fokus heißt Nein sagen.** Die Liste der nicht gebauten Funktionen ist in Abschnitt 5
+vollständig begründet. Sie ist Teil des Produkts, nicht seine Lücke.
 
-- **Links (360 px):** alle Parameter, scrollbar, eine Spalte.
-- **Rechts:** die Vorschau. Sie ist das Zentrum – jede Eingabe ist dort sofort sichtbar.
-- **Kopfzeile:** Name, Undo/Redo, Neu, Bibliothek, Exportieren. Sonst nichts.
+---
 
-Jede Funktion hat genau **einen** Ort:
+## 2. Leitsätze und wie sie umgesetzt sind
 
-| Funktion | Ort |
-|---|---|
-| Parameter der Skala | Parameterpanel |
-| 3D-Parameter (Relief, Plattenstärke, Höhe/Tiefe) | Exportdialog, Tab STL/OBJ – weil sie nur dort Wirkung haben und dort live in 3D sichtbar sind |
-| Kontur mitexportieren, DXF-Geometriemodus | Exportdialog, Tab SVG/DXF |
-| Einzelne Striche/Beschriftungen ausblenden | Auswahl in der Vorschau → Auswahlkarte oben im Panel |
-| Speichern/Öffnen | Bibliothek |
+### Weniger Denkarbeit statt weniger Knöpfe
+Es gibt genau **eine** Parameterspalte, in fester Reihenfolge: Skalentyp → Geometrie →
+Wertebereich → Hauptteilungen → Unterteilungen → Beschriftung → 3D/Extrusion → Ablage.
+Keine Tabs, keine Ebenen, keine Dialoge für Parameter. Wer „0 bis 80, Halbkreis" denkt,
+liest die Reihenfolge von oben nach unten ab und ist fertig.
 
-## 3. Weniger Denkarbeit statt weniger Knöpfe
+### Direkte Manipulation
+- Das Label eines jeden Zahlenfeldes ist ein **Ziehgreifer** (Cursor `ew-resize`). Ziehen
+  ändert den Wert in Echtzeit (Umschalt ×5, Alt ×0,2).
+- Teilstriche sind in der Vorschau **selektierbar**. Hover zeigt in der CSS-Transition (90 ms),
+  was gewählt wird; ein Klick setzt die Auswahl und zeichnet einen Führungstrich mit
+  Wert-Callout. Rechts oben steht der Ableser mit Art, Winkel/Abstand und Linienbreite.
+- Pfeil ←/→ wandert von Marke zu Marke (Tastatur), Esc hebt die Auswahl auf.
 
-Wir haben Eingabefelder nicht versteckt, sondern **Entscheidungen** entfernt:
+### Export ist das Produkt
+Der Exportdialog ist die größte Fläche der Anwendung, mit echter Dateivorschau,
+echter Dateigröße, Einheit, Maßstab, Dreieckszahl und ehrlichen Hinweisen.
+Der Primärbutton des Produkts lautet „Exportieren".
 
-- **Winkelkonvention:** 0° = 12 Uhr, im Uhrzeigersinn positiv – so denken Instrumentenbauer. Ein 270°-Messwerk ist `−135° … 135°`, ein Halbkreis `−90° … 90°`.
-- **Kreis und Halbkreis haben einen festen Endwinkel.** Er wird angezeigt („(fest)“), aber nicht abgefragt. Wer freie Winkel will, nimmt „Kreisbogen“.
-- **Beschriftungsdezimalen werden abgeleitet** aus Schrittweite und Minimalwert (`0.25` → zwei Nachkommastellen). Kein Formatfeld.
-- **Labels sitzen automatisch kollisionsfrei:** Die Box jedes Labels wird tangential an einen Freiraumkreis gelegt (Radius ± Strichlänge ± Abstand). Bei „100“ auf 3 Uhr rückt das Label so weit nach innen, dass die Box den Strich nicht berührt – ohne dass der Nutzer rechnet.
-- **Kontur linearer Skalen** ergibt sich aus dem Inhalt plus 3 mm Rand. Kein weiteres Feld.
-- **Voller Kreis:** Der Strich bei `max` fällt auf `min` und wird automatisch weggelassen (0 = 360).
-- **Standardwerte sind druckbar:** 0–100, Hauptteilung 10, 4 Unterteilungen, 4 mm Schrift, 0,6/0,3 mm Linien, Ø 100 mm Scheibe.
+### Ehrliche Zustände
+- Warnungen (nicht ganzzahlig geteilte Bereiche, begrenzte Markenlänge, Beschriftung über
+  dem Außenradius, abgeschnittene Markenanzahl) erscheinen **sofort im Schriftfeld** und
+  im Titelblock — nicht erst beim Export.
+- Im 3D-Export steht fett und ohne Beschönigung: „Beschriftung ist 2D-Geometrie und in
+  3D-Formaten nicht enthalten." Ein STL kann keine Textobjekte haben; das wird nicht
+  verschwiegen.
+- „Vorschau = Export" — weil technisch wahr.
 
-## 4. Direkte Manipulation
+### Keine Dark Patterns
+Keine Cookie-Banner, keine künstliche Verknappung, kein „Nur heute", keine versteckten
+Kosten, keine Nutzungsdaten. Es gibt kein Konto und keinen Dienst: Die Ablage liegt im
+`localStorage` des eigenen Browsers und lässt sich als JSON-Datei sichern. Nichts wird
+übertragen — es gibt keinen Server, der etwas empfangen könnte.
 
-- **Hover** in der Vorschau hebt den Strich (und sein Label) hervor und sagt, was er ist und was ein Klick tut: „Hauptteilstrich 40 · Klicken zum Auswählen“.
-- **Klick** wählt aus. Die Auswahlkarte zeigt Wert, Winkel, Position, Länge – und die zwei möglichen Aktionen: Strich ausblenden, Beschriftung ausblenden.
-- **Entf** blendet aus, **Esc** hebt die Auswahl auf. Ausgeblendete Striche bleiben als gestrichelte Geister sichtbar und anklickbar – ehrlicher Zustand, kein Verschwinden.
-- Zoom (Rad, `+`/`−`), Pan (Ziehen), Einpassen (`F`, Doppelklick), 100 % (`0`) = reale Größe bei 96 dpi.
+### Keine unnötigen Einstellungen
+Jede Eingabe verändert die Geometrie. Es gibt keine Präferenzen, keine Themes, keine
+Sprachauswahl, keine Einheitenwahl (Produktentscheidung: **Millimeter, immer**, Abschnitt 5).
 
-**Nicht gebaut: Ziehen von Strichen zur Änderung der Teilung.** Die Semantik ist mehrdeutig (ändert sich die Schrittweite, der Bereich oder nur dieser Strich?) und für technische Arbeit ist die Zahleneingabe präziser. Auswahl + Tastatur ist die ehrliche Form direkter Manipulation für dieses Problem.
+### Jeder Klick erhält sichtbares Feedback
+Alle Bedienelemente haben Übergänge (90–180 ms) für Farbe und Zustand. Der Primärbutton
+hat `:active`. Das Zahlenfeld zeigt den Fokus in Signalblau. Das Sichern zeigt „Sichert …".
+Der Export lädt eine echte Datei herunter — der Klick endet nicht im Nichts.
 
-## 5. Ehrliche Zustände
+### Jede Funktion hat genau einen Ort
+Undo/Redo im Kopf. Neue Skala unten im Panel **und** im Leerzustand (beide Male derselbe
+Vorgang, an dessen natürlicher Stelle). Export ausschließlich im Kopf. Sichern ausschließlich
+in der Ablage.
 
-- **Warnungen stehen in der Vorschau**, nicht in einem Log: ungültiger Bereich, Teilstriche außerhalb der Kontur (mit dem tatsächlichen r-Bereich), überlappende Beschriftungen, zu viele Striche (Obergrenze 5 000, wird genannt), Gravurtiefe ≥ Platte.
-- **Kein Ladeindikator** in der Vorschau – es gibt nichts zu laden, die Engine rechnet in Millisekunden. Im Exportdialog steht ehrlich „berechnet …“, wenn ein Mesh gerade entsteht.
-- **Export zeigt die Datei selbst:** SVG/DXF-Vorschau wird aus dem exportierten Dokument gerendert, STL/OBJ als schattiertes Rendering des tatsächlichen Dreiecksnetzes. Dazu Dateigröße, Einheiten (mm), Maßstab (1:1), Ebenen, Dreieckszahl, und ein Hinweis, wenn Geometrie am Körper beschnitten wurde.
-- **Undo-Tooltip sagt „Nichts rückgängig zu machen“** statt stumm deaktiviert zu sein.
-- **Leerer Zustand:** eine Einladung, ein Button. „Gespeicherte öffnen“ erscheint nur, wenn es tatsächlich gespeicherte Skalen gibt – kein toter Button.
-- Jeder Klick antwortet sichtbar: Download → „Heruntergeladen: name.dxf“, Speichern → „Gespeichert“, Auswahl → blaue Hervorhebung.
+---
 
-## 6. Visuelle Hierarchie
+## 3. Visuelle Richtung
 
-- **Dark First**, genau ein Thema. Kein Theme-Switch (eine Einstellung weniger).
-- **Geist Sans** für Text, **Geist Mono** für jede Zahl (Eingaben, Statuszeile, Fakten, Tooltips mit Werten). `font-variant-numeric: tabular-nums` global – Zahlen springen nicht.
-- **Eine Akzentfarbe: Blau.** Sie bedeutet Fokus (Ring), Auswahl (Strich, Auswahlkarte), primäre Aktion (Exportieren, Neue Skala, Speichern). Sie dekoriert nichts. Warnungen sind bernstein, Fehler rot – beides sparsam.
-- Fokus ist überall sichtbar (`:focus-visible` mit Ring), Tab-Reihenfolge folgt der Lesereihenfolge.
+**Reales Vorbild:** ein eloxiertes Aluminium-Messgerätefrontpanel aus der Werkstatt —
+siebbedruckte, gesperrte Mikrotext-Beschriftung, gravierte Teilstriche — gekreuzt mit dem
+**Schriftfeld einer technischen Zeichnung nach DIN**. Das übernommene Merkmal ist das
+Schriftfeld: Die Kennwerte stehen unten als gekastelter Titelblock, nicht als lose Statistik.
 
-## 7. Undo/Redo: zustandsbasiert
+### Oberfläche und Palette
+Dunkel nicht als Stil, sondern als Material: Anodisierung.
 
-Der Verlauf speichert komplette `ScaleParams`-Objekte, keine Aktionen. Dadurch ist jede Änderung – Radius, Winkel, Teilung, Label, Ausblenden, Typwechsel, sogar „Neu“ – rückgängig machbar, ohne dass irgendwo eine inverse Aktion implementiert sein müsste.
-Tipp-Bursts im selben Feld (1,2 s) werden zu einem Schritt zusammengefasst, damit „80“ nicht zwei Undo-Schritte kostet. Limit: 200 Schritte.
+| Rolle | Wert | Herkunft |
+| --- | --- | --- |
+| Grundfläche | `#0B0E12` | eloxiertes Aluminium im Schatten |
+| Panel / Erhebung | `#11151B` / `#161B22` / `#1C222B` | gestufte Bleche |
+| Haarlinien | `#20272F` / `#2C343E` | Fugen zwischen Frontplattenfeldern |
+| Text / gedämpft / faint | `#E7EDF3` / `#8A97A6` / `#5E6A78` | Siebdruckweiß, gestuft, nie reines Grau |
+| **Akzent** | `#2F6BFF` | Signalblau: **nur** Fokus, Auswahl, Primäraktion |
+| Zustand Warnung | `#D8A13A` | Bernstein, ausschließlich als Zustand |
 
-## 8. Was bewusst fehlt (und warum)
+Der Akzent darf nicht dekorieren. Deshalb ist er genau an drei Stellen sichtbar:
+Fokusring, gewählter Teilstrich, Primärbutton (und der Führungsstrich des Callouts —
+derselbe Sachverhalt „Auswahl").
 
-| Nicht gebaut | Warum |
-|---|---|
-| Freier SVG-Editor, Formen, Text, Farben | Nicht das Problem. Wer gestalten will, importiert unser SVG in Inkscape. |
-| Logarithmische / nichtlineare Skalen | Andere Domäne (Rechenschieber, Audio). Die Engine könnte es (Mapping `t → Wert` ist eine Funktion), das UI müsste eine zweite Denkweise einführen. Bewusst vertagt. |
-| Zeiger, Ziffernblatt-Deko, Logos | Instrumentendesign, nicht Skalenerzeugung. |
-| TrueType-Fonts für Beschriftung | Erzeugt Font-Abhängigkeit im Ziel-CAD, Konturen mit hunderten Knoten und unklare Gravurbreite. Die integrierte Single-Stroke-Schrift ist in allen vier Formaten identisch und direkt fräsbar. |
-| Dezimaltrennzeichen-Option | Die Strichschrift kennt `,` – aber jede Option kostet Denkarbeit. Punkt ist die internationale technische Konvention. |
-| Mehrere Skalen in einem Dokument | Eine Skala = eine Datei. Zusammenbau passiert im CAD. |
-| Zoll als Einheit | Millimeter ist die CAM-Konvention; jedes CAM skaliert beim Import. Zwei Einheiten würden jede Zahl im UI mehrdeutig machen. |
-| Theme-Switch, Sprachwahl, Layout-Optionen | Einstellungen, die nichts an der Skala ändern. |
-| Cloud-Konten, Teilen, Kommentare | Dashboard-Denken. Die Bibliothek speichert Parameter, mehr nicht. |
-| Tick-Drag zur Teilungsänderung | Siehe Abschnitt 4. |
+### Typografie
+**Geist Sans** für Texte, **Geist Mono** für jede Zahl — mit `font-variant-numeric:
+tabular-nums`, damit Werte beim Ziehen nicht zappeln. Skala als Verhältnis 1.25
+(11 · 13 · 16 · 20 · 25 · 31 px). Persönlichkeitsträger: **gesperrte Versalien-Mikrolabels**
+(10 px, `letter-spacing .18em`) wie Siebdruckbeschriftung auf Frontplatten.
 
-## 9. Tastatur
+### Layoutentscheidung gegen den Default
+Kein zentrierter Content-Container, keine Kachelwand. Vollflächige Bühne mit
+**Millimeter-Maßstäben an Ober- und linkem Rand**, die live mit Zoom und Pan mitlaufen,
+und einem Schriftfeld am Fuß. Die Anwendung sieht aus wie eine Zeichnung auf dem
+Rasterbock, nicht wie ein SaaS-Panel. Links eine einzige Säule (360 px) ohne Cards.
 
-`Strg+Z` / `Strg+⇧+Z` Undo/Redo · `Strg+E` Export · `Strg+S` Bibliothek · `F` Einpassen · `+`/`−`/`0` Zoom · `Esc` Auswahl/Dialog/Feld verlassen · `Entf` ausgewählten Strich ausblenden · `↑`/`↓` in Zahlenfeldern (⇧ ×10, ⌥ ÷10) · `Strg+↵` im Exportdialog lädt herunter.
+### Bewegung
+Maschinelle Präzision: Geometrie ohne Nachlauf (<100 ms), Farbwechsel 90 ms,
+Dialogfahrt 180 ms (`cubic-bezier(.2,.8,.2,1)`), Panel-Einschub 220 ms.
+`prefers-reduced-motion` schaltet alles auf nahezu 0 ms.
 
-## 10. Performance-Haltung
+---
 
-Zuerst Korrektheit. Gemessen: 1 000 Striche berechnet die Engine in ~6 ms, die Vorschau rendert sie als statische SVG-Ebene, die nur bei Parameter- oder Zoomänderung neu entsteht. Hover und Auswahl zeichnen nur die betroffenen Primitive darüber (Event-Delegation statt 1 000 Handler). Mesh-Erzeugung (~0,1–1,3 s bei 1 000 Strichen) passiert nur im Exportdialog, leicht entprellt, und wird ehrlich als „berechnet …“ angezeigt.
+## 4. Zugänglichkeit
+
+- Alle Bedienelemente sind nativ fokussierbar, mit sichtbarem Fokusring in Signalblau.
+- Esc beendet jeden Modus: Exportdialog schließen, Auswahl aufheben.
+- Die Bühne hat `tabIndex=0` und ist mit ←/→, `+`/`-`, `0`, Esc vollständig über die
+  Tastatur bedienbar. Zahlenfelder reagieren auf ↑/↓ (Umschalt ×10, Alt ×0,1) und Eingabe.
+- Segmented Controls sind `role="radiogroup"`/`radio`, Schalter `role="switch"`.
+- Jedes Icon hat einen `aria-label` **und** einen Tooltip mit ehrlichem Text („Rückgängig (⌘Z)").
+- Kontraste: Text `#E7EDF3` auf `#0B0E12` ≈ 15:1, gedämpft `#8A97A6` ≈ 6,5:1.
+- Beschriftung in der Vorschau und im Export ist echter Text (SVG `<text>`, DXF `TEXT`),
+  nicht in Pfade konvertiert — er bleibt editierbar und maschinenlesbar.
+
+---
+
+## 5. Was **nicht** gebaut wurde — und warum
+
+| Nicht gebaut | Begründung |
+| --- | --- |
+| **Bemaßung, Toleranzen, Passungen** | Das ist CAD. Die Skala liefert Geometrie, nicht Konstruktion. |
+| **Freie Beschriftungstexte, Einheitenzeichen, Logo-Import** | Der Wert ist die Beschriftung. Eigene Texte öffnen die Tür zum Schrifteditor. |
+| **Schriftartenwahl / Buchstabenabstände** | Eine technische Skala braucht Lesbarkeit, keine Typografie-Werkzeuge. Fest: Geist Sans für Exporttext. |
+| **Schriftpfade im STL/OBJ** | Ein STL kennt keine Textobjekte. Echtes Gravieren von Buchstaben erfordert einen Vektorfont-Tessellierer — das ist ein eigenes Produkt. Stattdessen: ehrlicher Hinweis im Exportdialog. |
+| **Einheitenauswahl (inch, deg/cm)** | Zwei Einheitenwelten verdoppeln jede Zahl im Kopf. Produktentscheidung: Millimeter, immer, 1:1. Steht im Kopf und im Exportdialog. |
+| **Markenrichtung nach außen** | Der Teilkreis ist die Ankerlinie, Marken wachsen nach innen — das deckt Frontplatten und Drehknöpfe ab. Eine zweite Richtung verdoppelt die Geometriefälle und die Denkarbeit. |
+| **Beliebige Tick-Folgen (logarithmisch, nichtlineare Skalen)** | Eine logarithmische Skala verändert die Aussage des Werkzeugs fundamental (Werteanzeige statt Werteeinteilung). |
+| **Graduation aus Tabellen/CSV** | Importformate sind ein eigenes Produktversprechen. |
+| **Layer, Farben, Linientypen in DXF** | Eine Skala hat zwei Lagen: `SKALA` und `BESCHRIFTUNG`. Mehr ist Zeichnungsorganisation. |
+| **Vorschau-Rotation in 2D, Bemaßungs-Raster einstellbar** | Das Raster ist 10 mm fest. Eine Einstellung, die niemand ändert, ist eine Einstellung zu viel. |
+| **Accounts, Cloud, Teilen, Versionsverlauf** | Kein Dark Pattern, keine Plattform. Die Anwendung ist eine statische Seite für Cloudflare Pages; die Ablage liegt im Browser und lässt sich als Datei sichern. |
+| **Server, Datenbank, API-Routen** | Gefordert ist eine rein clientseitige Anwendung. Alles rechnet im Browser; es gibt keinen Datenverkehr außer dem Laden der Seite selbst. Siehe `ARCHITECTURE.md`, Abschnitt 9 (Deployment). |
+| **Live-Kollaboration, Mobile Editing** | Ein Frontplattenbauer sitzt am Rechner mit CAD daneben. Die Ansicht bleibt responsiv und benutzbar, aber es gibt keine dedizierte Mobile-Erfahrung. |
+| **Automatisches Nachführen des Fit-to-View bei jeder Änderung** | Wäre eine störende Bewegung beim Ziehen. Fit erfolgt beim Öffnen und bei Typwechsel, sonst auf Knopfdruck (Taste 0). |
+| **Undo für Auswahl und Zoom** | Undo gilt dem **Dokument**, also den Parametern. Ansicht ist kein Dokumentinhalt. |
+
+---
+
+## 6. Undo/Redo
+
+**Zustandsbasiert, nicht aktionsbasiert.** Der Store hält `present`, `past`, `future` —
+jede Änderung legt die komplette vorherige Parameterbelegung ab (max. 120 Stufen).
+Es gibt keinen Patch-Rückweg, der Fehler reproduzieren könnte: Zurückzugehen bedeutet
+wörtlich, einen früheren Zustand wieder einzusetzen.
+
+- Jede Änderung — Radius, Winkel, Teilung, Label — ist rückgängig machbar.
+- Zieh-Vorgänge (Scrubbing) fassen eine Bewegung zu **einer** Stufe zusammen
+  (`transient` + `endEdit`), damit ein Wisch nicht 200 Stufen füllt.
+- Geometrie liegt bewusst **nicht** im Store. Sie wird aus `present` berechnet
+  (`useMemo`), was Undo billig und die App schnell hält.
+
+## 7. Performance
+
+Ziel: 1000 Teilstriche flüssig bearbeitbar.
+
+- Geometrieberechnung ist ein `useMemo` über den Parameter-Zustand — keine Berechnung
+  im Renderpfad, kein Re-Render ohne Zustandsänderung.
+- Teilstriche sind Pfade mit einer CSS-Klasse. Der Hover läuft über **eine** delegierte
+  Zeigerbehandlung und reine CSS-Transitions — React rendert bei Hover nicht neu.
+- Die 3D-Vorschau rendert auf `<canvas>` (WebGL wäre Overkill), mit zwischengespeichertem
+  Dreiecksnetz je Höhenfeld und rAF-Entprellung beim Drehen.
+- Reihenfolge der Optimierung: erst Korrektheit, dann Messbarkeit. Es gibt keine
+  vorsorglichen Memo-Schichten außer den drei oben genannten.

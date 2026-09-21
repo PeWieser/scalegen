@@ -1,5 +1,9 @@
-import { ScaleGeneratorApp } from "@/features/scale-editor/ScaleGeneratorApp";
+import { Workbench } from "@/features/scale/Workbench";
 
-export default function Page() {
-  return <ScaleGeneratorApp />;
+/**
+ * Alles clientseitig: keine Datenbank, kein API, kein Server-Zugriff.
+ * Die Seite ist statisch exportierbar (Cloudflare Pages).
+ */
+export default function HomePage() {
+  return <Workbench />;
 }

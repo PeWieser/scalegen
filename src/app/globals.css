@@ -1,110 +1,139 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
-/*
-  Scale Generator – Dark First.
-  A single accent colour (blue) is reserved for focus, selection and the primary action.
-*/
 :root {
-  --background: oklch(0.155 0.006 260);
-  --foreground: oklch(0.93 0.005 260);
-  --card: oklch(0.19 0.006 260);
-  --card-foreground: oklch(0.93 0.005 260);
-  --popover: oklch(0.21 0.006 260);
-  --popover-foreground: oklch(0.93 0.005 260);
-  --primary: oklch(0.62 0.19 255);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.25 0.006 260);
-  --secondary-foreground: oklch(0.93 0.005 260);
-  --muted: oklch(0.23 0.006 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.27 0.008 260);
-  --accent-foreground: oklch(0.96 0 0);
-  --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.3 0.006 260);
-  --input: oklch(0.3 0.006 260);
-  --ring: oklch(0.62 0.19 255);
-  --radius: 0.5rem;
-  --warning: oklch(0.8 0.15 80);
-  --stage: oklch(0.13 0.005 260);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-warning: var(--warning);
-  --color-stage: var(--stage);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* Eloxiertes Aluminium — Grundfläche und Erhebungen */
+  --surface-0: #0b0e12;
+  --surface-1: #11151b;
+  --surface-2: #161b22;
+  --surface-3: #1c222b;
+  --line: #20272f;
+  --line-strong: #2c343e;
+
+  /* Getönte Neutrale, kein reines Grau */
+  --text: #e7edf3;
+  --text-muted: #8a97a6;
+  --text-faint: #5e6a78;
+
+  /* EINE Akzentfarbe: Fokus, Auswahl, Primäraktion */
+  --accent: #2f6bff;
+  --accent-hover: #4a80ff;
+  --accent-active: #2559d8;
+
+  /* Zustände, nie Dekoration */
+  --warn: #d8a13a;
+
+  --tick: #93a2b4;
+  --tick-hover: #d6e2f0;
 }
 
-@layer base {
-  * {
-    @apply border-border;
+
+
+* {
+  border-color: var(--line);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono,
+[class*="font-[family-name:var(--font-mono)]"],
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: none;
+}
+
+/* Teilstriche: Hover zeigt, was gewählt wird. 90 ms, keine Bewegung. */
+.scale-tick {
+  fill: var(--tick);
+  transition: fill 90ms linear;
+}
+
+.scale-tick:hover {
+  fill: var(--tick-hover);
+  cursor: pointer;
+}
+
+.scale-tick--selected,
+.scale-tick--selected:hover {
+  fill: var(--accent);
+}
+
+.ruler-text {
+  fill: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.callout-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Schmale Rollbalken, passend zum Panel */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border: 3px solid var(--surface-0);
+  border-radius: 999px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
-  html {
-    color-scheme: dark;
+  to {
+    opacity: 1;
   }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1, "cv11" 1;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.985);
   }
-  /* Every number in the product is monospaced and tabular. */
-  .font-mono,
-  input[type="number"],
-  input[inputmode="decimal"] {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
-  /* Visible focus, always, everywhere. */
-  :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-  ::selection {
-    background: color-mix(in oklab, var(--primary) 45%, transparent);
-  }
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type="number"] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 999px;
-    border: 2px solid var(--background);
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

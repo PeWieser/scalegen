@@ -1,157 +1,142 @@
-# EXPORT_FORMATS.md – Scale Generator
+# EXPORT_FORMATS.md — Scale Generator
 
-Export ist das Produkt. Alle Formate entstehen aus **derselben** `ScaleDefinition` wie die Vorschau.
-Was du siehst, ist, was in der Datei steht – geometrisch identisch, nur ohne Farben.
+Alle vier Formate lesen **dieselbe Geometriequelle**: `ScaleDefinition` aus
+`lib/scale-engine`. Es gibt für kein Format eine zweite Zeichenroutine.
 
-Gemeinsam für alle Formate:
+**Für alle Formate:** Einheit **Millimeter**, Maßstab **1:1** (1 Einheit = 1 mm),
+Weltkoordinaten mit **y nach oben** (CAD-Konvention), Ursprung wie in der Vorschau.
 
-| Eigenschaft | Wert |
-|---|---|
-| Einheit | Millimeter |
-| Maßstab | 1:1 |
-| Ursprung | Kreismittelpunkt (kreisförmige Skalen) bzw. Mitte der Skalenlinie (linear) |
-| Beschriftung | Geometrie (Strichschrift), nie Text-Objekte → keine Font-Abhängigkeit |
-| Ausgeblendete Striche/Labels | werden **nicht** exportiert |
-| Dateiname | aus dem Skalennamen, ASCII-sicher (`Front-Panel-0-80.dxf`) |
-
-Der Exportdialog zeigt vor dem Download: eine Vorschau der Datei, Dateigröße, Einheiten, Maßstab und formatspezifische Fakten.
+Grundregel: *Export = Vorschau.* Was im dunklen Feld rechts zu sehen ist, steht in der Datei.
 
 ---
 
-## Koordinatensysteme
+## SVG — `*.svg`
 
-Die Engine rechnet in SVG-Konvention (y nach unten). Beim Export wird umgerechnet:
+| | |
+| --- | --- |
+| Zweck | Vektor für Plotter, Laser, Dokumentation, Web |
+| Kodierung | UTF-8, SVG 1.1 |
+| Maße | `width`/`height` in `mm`, passendes `viewBox` |
+| Geometrie | jede Marke ein `<path>` mit geschlossenem Pfad, `fill`, kein `stroke` |
+| Beschriftung | `<text>` mit `text-anchor="middle"`, `dominant-baseline="central"`, Rotation als `transform` |
+| Struktur | `<g id="skalenmarken">` und `<g id="beschriftung">` |
+| Nachkommastellen | 4 (Ausgabe auf 1e-4 gerundet) |
 
-| Format | x | y | z |
-|---|---|---|---|
-| SVG | rechts | **unten** (SVG-Standard) | – |
-| DXF | rechts | **oben** (`y_dxf = −y_engine`) | – |
-| STL / OBJ | rechts | **oben** | oben (Platte liegt auf z = 0) |
+Bewusste Entscheidungen:
+- **Flächen statt Striche.** Eine Marke mit „Linienbreite 0,8 mm" ist eine Fläche von
+  0,8 mm Breite. Ein `stroke` wäre von jedem Werkzeug anders interpretiert worden
+  (Skalierung des Strichs, `vector-effect`, Plotter-Pen-Zuordnung). Fläche ist eindeutig.
+- **Beschriftung bleibt Text.** Keine Pfade — der Nutzer kann in jedem Vektorprogramm
+  weiterarbeiten. Wer Pfade braucht, konvertiert dort.
+- **Keine Gruppen pro Marke, keine Attribute ohne Nutzen.** Die Datei bleibt klein und
+  für Postprozessoren gut lesbar.
+- `shape-rendering="geometricPrecision"` wird nicht erzwungen; die Geometrie ist exakt.
 
-Winkel: In der Anwendung 0° = 12 Uhr, im Uhrzeigersinn. Im DXF werden Bögen in die DXF-Konvention (gegen den Uhrzeigersinn ab +x) umgerechnet: `φ = 90° − θ`.
+## DXF — `*.dxf`
 
----
+| | |
+| --- | --- |
+| Zweck | CAD/CAM, Fräsen, Wasserstrahl, Gravur, Schneiden |
+| Version | **DXF R12 (AC1009)**, ASCII |
+| Lagen | `SKALA` (Teilstriche), `BESCHRIFTUNG` (Texte) |
+| Geometrie | `POLYLINE` + `VERTEX` + `SEQEND`, geschlossen (Gruppe 70 = 1), 4 Ecken |
+| Beschriftung | `TEXT`, zentriert (72 = 1, 73 = 2), Höhe = Schriftgröße in mm, Gruppe 50 = Rotation in Grad |
+| Header | `$ACADVER`, `$EXTMIN`, `$EXTMAX` |
+| Nachkommastellen | 6 |
 
-## SVG
+Bewusste Entscheidungen:
+- **R12 statt R2000.** Moderne Schreiber nehmen `LWPOLYLINE`; alte CAM-Postprozessoren,
+  Graviergeräte und Maschinensteuerungen nehmen oft nur R12. Für dieses Publikum zählt
+  Kompatibilität mehr als Komfort. Der Preis: `VERTEX` ist etwas wortreicher.
+- **Geschlossene Konturen statt Striche.** Ein Laser- oder Fräsprozess braucht eine
+  Kontur mit Anfang und Ende, keine Strichstärke. Jede Marke ist eine in sich
+  geschlossene Fläche — sie kann direkt als Bahn oder als Ausschnitt verwendet werden.
+- **Keine Polylinien-Breite (Gruppe 40/43).** Die Breite steckt in der Kontur. Damit
+  hängt das Ergebnis nicht von der Linienbreiten-Interpretation des Zielprogramms ab.
+- **Zwei Lagen, nicht mehr.** Layer-Organisation ist Aufgabe der Zeichnung, nicht der Skala.
+- **TEXT statt MTEXT.** MTEXT ist ein R2000-Merkmal und wird von vielen Postprozessoren
+  ignoriert. Ein `TEXT`-Objekt pro Zahl ist unbestreitbar.
+- Dezimalkomma wie in der Vorschau (deutsche Schreibweise, z. B. `0,5`). Wer einen Punkt
+  braucht, ändert das in der Nachbearbeitung — die Zahl steht als Zeichenkette im Objekt.
 
-**Für:** Laser, Schneidplotter, Druckvorlagen, Inkscape/Illustrator, Web.
+## STL — `*.stl`
 
-- `width`/`height` in `mm`, `viewBox` in mm → 1 Benutzereinheit = 1 mm. Jede Software, die SVG-Einheiten respektiert, importiert maßstabsgetreu.
-- Kein Füllen, nur Konturen: `fill="none"`, Strichbreiten in mm, Farbe Schwarz.
-- Ebenen als Gruppen mit Inkscape-Labels:
+| | |
+| --- | --- |
+| Zweck | 3D-Druck, CAM-Simulation, Bearbeitung |
+| Kodierung | **binär** (80 Byte Kopf, Dreieckszahl, 50 Byte je Dreieck) |
+| Geometrie | echtes Dreiecksnetz des Höhenfeldes, Normale nach außen |
+| Einheit | STL ist einheitenlos — hier gilt **1 Einheit = 1 mm** |
+| Enthalten | Grundkörper + Marken |
+| Nicht enthalten | Beschriftung (siehe unten) |
 
-  | `id` | Inhalt |
-  |---|---|
-  | `outline` | Kontur (Ring/Scheibe bzw. Rechteck), 0,2 mm, optional |
-  | `baseline` | Skalenlinie (Kreis, Bogen oder Linie) |
-  | `ticks-major` | Hauptteilstriche als `<line>` |
-  | `ticks-minor` | Unterteilstriche als `<line>` |
-  | `labels` | Beschriftung als `<path>` (Polylinien, `stroke-linecap="round"`) |
+### Wie die 3D-Geometrie entsteht
 
-- Striche haben `butt`-Enden → die Strichlänge ist exakt die eingestellte Länge.
-- Option: *Kontur mit exportieren* (an/aus).
+Die STL ist **kein Screenshot und kein Mesh der SVG**. Sie wird aus dem Parameterraum
+gebaut (`lib/scale-engine/mesh.ts`):
 
-Beispielkopf:
+1. **Zerlegung.** Der Parameterraum (Winkel × Radius bzw. Abstand × Querrichtung) wird
+   in ein Gitter geteilt. Die Kanten liegen exakt auf den Rändern jeder Marke;
+   zusätzlich wird jede Zelle auf höchstens 3° (bzw. 5 mm) Länge unterteilt, damit Bögen
+   rund bleiben.
+2. **Höhenfeld.** Jede Zelle hat eine konstante Höhe:
+   - Grundfläche: `Plattenstärke`
+   - innerhalb einer Marke: `Plattenstärke + Reliefhöhe` (Modus **positiv**) bzw.
+     `Plattenstärke − Gravurtiefe` (Modus **Gravur**)
+3. **Körper.** Daraus entstehen Deckelflächen, eine durchgehende Bodenfläche und an
+   jeder Höhenstufe senkrechte Wandflächen. Bei „Gravur" sind das die Wände **echter
+   Kanäle** — die Platte hat Löcher in der gewünschten Tiefe, kein aufgelegtes Material.
+4. **Orientierung.** Jede Fläche wird gegen einen Außenhint geprüft und bei Bedarf
+   umgedreht. Das Netz ist orientiert und geschlossen (watertight).
+5. **Naht.** Ein Vollkreis wird über `wrapU` verbunden; Marken auf der Naht werden
+   aufgeteilt, damit keine doppelten Flächen entstehen.
 
-```xml
-<svg xmlns="http://www.w3.org/2000/svg" width="104mm" height="104mm" viewBox="-52 -52 104 104" fill="none" stroke="#000000">
-  <g id="ticks-major" inkscape:groupmode="layer" inkscape:label="Hauptteilung">
-    <line x1="-40" y1="0" x2="-34" y2="0" stroke-width="0.6"/>
-```
+Parameter und ihre Bedeutung:
 
----
+| Parameter | Bedeutung |
+| --- | --- |
+| Plattenstärke | Extrusionshöhe des Grundkörpers (mm) |
+| Reliefhöhe / Gravurtiefe | Höhe der Linien über bzw. Tiefe unter der Plattenoberfläche (mm) |
+| Linienbreite | Breite der Linien in 3D. **0 = Linienbreite aus der Vorschau übernehmen** |
 
-## DXF
+CAM kann damit direkt arbeiten: Die Gravurkanäle haben senkrechte Wände und einen flachen
+Boden in konstanter Tiefe — genau das, was ein Schaftfräser oder Laser erwartet.
 
-**Für:** CAM (Fusion 360, Estlcam, VCarve, LightBurn), CAD (LibreCAD, AutoCAD, FreeCAD).
+## OBJ — `*.obj`
 
-- **Version:** R12 / `AC1009` – das kompatibelste DXF, das jedes CAM liest. Header mit `$INSUNITS = 4` (mm) und `$EXTMIN/$EXTMAX`.
-- **Tabellen:** `LTYPE` (CONTINUOUS) und `LAYER`.
-- **Zwei Geometriemodi** (Option im Dialog):
+| | |
+| --- | --- |
+| Zweck | 3D-CAD, Rendering, Weiterverarbeitung |
+| Kodierung | Text, Wavefront OBJ |
+| Geometrie | `v`-Liste + `f`-Liste, dieselben Dreiecke wie STL |
+| Einheit | mm, Maßstab 1:1 |
+| Objektname | `o skala` |
 
-  ### Mittellinien (Standard)
-  Eine Linie je Strich – für Gravur mit V-Fräser, Laser, Plotter oder Nadel. Die Breite bestimmt das Werkzeug.
-
-  | Ebene | Entitäten |
-  |---|---|
-  | `OUTLINE` | `CIRCLE` (Außen-/Innenradius) bzw. geschlossene `POLYLINE` (Rechteck) |
-  | `BASELINE` | `CIRCLE` (Vollkreis), `ARC` (Bogen) oder `LINE` |
-  | `TICKS_MAJOR` | `LINE` |
-  | `TICKS_MINOR` | `LINE` |
-  | `LABELS` | offene `POLYLINE` je Schriftzug-Strich |
-
-  ### Konturen
-  Alle Elemente als **geschlossene** `POLYLINE`-Konturen mit den eingestellten Linienbreiten – vereinigt (keine Überlappungen), für Taschenfräsen, Ausschneiden oder Ätzmasken.
-
-  | Ebene | Entitäten |
-  |---|---|
-  | `OUTLINE` | wie oben |
-  | `SCALE` | geschlossene `POLYLINE` (Außenkonturen und Löcher, z. B. das Innere einer „0“) |
-
-  Bögen werden mit einer Sehnenabweichung ≤ 0,01 mm segmentiert (bei r = 50 mm: 0,3°-Schritte).
-
-- Koordinaten mit 4 Nachkommastellen (0,1 µm).
-- Keine Lineweights im R12-Format – im Mittellinienmodus sind Breiten bewusst Werkzeugsache; wer sie braucht, nimmt den Konturmodus.
-
----
-
-## STL
-
-**Für:** 3D-Druck (Zifferblätter, Skalenringe), CAM-Reliefs, Import als Körper ins CAD.
-
-Die STL ist **kein** Abbild der SVG, sondern ein aus den Parametern gebauter Volumenkörper:
-
-- **Körper:** Ring/Scheibe aus Innen-/Außenradius (kreisförmig) bzw. Rechteck (linear), Stärke = *Plattenstärke*.
-- **Erhaben:** Striche, Skalenlinie und Ziffern stehen um *Extrusionshöhe* über der Platte.
-- **Gravur:** dieselben Elemente sind um *Gravurtiefe* in die Platte eingeschnitten. Ist die Tiefe ≥ Plattenstärke, entsteht ein Durchbruch (Schablone) – der Dialog benennt das.
-- **Linienbreiten** sind die im Panel eingestellten Breiten (Haupt-/Unterteilung, Skalenlinie, Beschriftung). Ziffern haben runde Strichenden – identisch mit SVG/DXF-Konturmodus.
-- Geometrie außerhalb des Körpers wird beschnitten; der Dialog nennt die beschnittene Fläche in mm² und die Vorschau warnt vorher.
-
-Technisch:
-
-| Eigenschaft | Wert |
-|---|---|
-| Kodierung | binär, Little-Endian, 80-Byte-Header `Scale Generator – <name> – units: mm` |
-| Normalen | pro Dreieck berechnet, nach außen |
-| Topologie | eine geschlossene Hülle: jede Kante gehört zu genau zwei Dreiecken (verifiziert für alle Modi) |
-| Lage | Platte auf z = 0, z nach oben; x/y wie DXF |
-| Größe | ca. 300 KB (Halbkreis 0–80), ~4 MB bei 1 000 Strichen |
-
-Aufbau der Hülle (2.5D): Boden · Außenwände · Deckel mit Aussparungen · Taschenböden bzw. Feature-Deckel · Feature-Wände. Flächen werden mit *earcut* trianguliert, Flächenvereinigungen mit *polygon-clipping* berechnet (siehe ARCHITECTURE.md).
-
-Hinweis für CAM: Das Netz ist manifold, Slicer und Fusion/Meshmixer importieren es als einen Körper. Für saubere Toolpaths auf Frontplatten ist meist der **DXF-Export** das bessere Werkzeug – STL ist für Reliefs und Druck gedacht.
-
----
-
-## OBJ
-
-**Für:** Blender, CAD/CAM-Tools, die OBJ bevorzugen.
-
-- Dasselbe Netz wie STL, ASCII.
-- Vertices dedupliziert (`v x y z`, 4 Nachkommastellen), Dreiecke als `f a b c`, ein Objekt `o <name>`.
-- Kopfzeilen dokumentieren Einheit und Achsen (`# units: mm, scale 1:1, z up`).
-- Keine Normalen/Materialien – bewusst schlank; jede Software berechnet Normalen aus der konsistenten Wicklung.
+Bewusste Entscheidung: keine `vt`/`vn`/`usemtl`. Eine Skala ist Fertigungsgeometrie,
+kein Rendering-Asset. Wer Normalen braucht, leitet sie aus den Flächen ab.
 
 ---
 
-## Beschriftung als Strichschrift
+## Beschriftung in 3D — ehrliche Ausnahme
 
-Ziffern `0–9`, `−`, `.`, `,` sind als Polylinien auf einem 4 × 7-Raster definiert (`core/scale-engine/stroke-font.ts`).
-Schriftgröße = Versalhöhe in mm, Linienbreite frei wählbar (Standard 0,4 mm).
+SVG und DXF enthalten die Beschriftung als echte Textobjekte. **STL und OBJ enthalten
+sie nicht.** Gründe:
 
-Warum keine Outline-Fonts:
+- Ein STL kennt keine Textobjekte, nur Dreiecke.
+- Buchstaben müssten über einen Vektorfont zu Flächen tesselliert und dann in das
+  Höhenfeld übertragen werden — das ist eine eigene Geometriebibliothek (Schriftschnitte,
+  Konturlöcher wie in „A", „O", „8").
+- Eine halbherzige Lösung (Rechteck-Plaketten, Punktraster) wäre für den Nutzer eine
+  Überraschung in der Datei. Das wäre ein Dark Pattern.
 
-1. **Identisch in allen Formaten.** Preview, SVG, DXF-Mittellinie, DXF-Kontur und STL zeigen exakt dieselbe Ziffer.
-2. **Direkt fräsbar.** Eine Mittellinie pro Strich ist genau das, was ein V-Fräser oder Laser braucht – ohne Offsetting im CAM.
-3. **Keine Abhängigkeit.** Das Ziel-CAD braucht keine Schrift installiert; keine Ersatzschrift, kein Versatz.
-4. **Wenige Knoten.** Eine „8“ hat 20 Knoten, nicht 200.
+Stattdessen steht im Exportdialog unmissverständlich dabei: *„Beschriftung ist
+2D-Geometrie und in 3D-Formaten nicht enthalten."* Wer gravierte Zahlen braucht,
+gravieren die DXF (Textobjekte) — dafür ist das Format gemacht.
 
 ---
 
-## Prüfung
+## Dateigröße und Skalierung im Dialog
 
-Während der Entwicklung wurde jeder Exporter unter Node ausgeführt und geprüft:
-
-- SVG: gültiges XML, mm-Einheiten, 5 Ebenen, Strichanzahl = Engine.
-- DXF: R12-Struktur (HEADER/TABLES/ENTITIES/EOF), 41 `LINE`, 1 `ARC`, 18 `POLYLINE` für die Standard-Halbkreisskala 0–80; Konturmodus 31 geschlossene Polylinien.
-- STL/OBJ: Dreieckszahl, Bounding-Box (z. B. 100 × 100 × 3 mm), Kantenpaarung: 0 offene, 0 doppelte Kanten in allen Modi, inkl. Durchbruch und beschnittener Features.
+Der Exportdialog zeigt **echte Werte**, gerechnet aus den exportierten Bytes:
+Dateiname, Einheit, Maßstab, Dateigröße, Anzahl Teilstriche, Anzahl Beschriftungen,
+Dreieckszahl (STL/OBJ) und die Zeichnungsausdehnung in mm. Es wird nichts geschätzt.

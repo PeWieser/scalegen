@@ -1,23 +1,31 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Scale Generator",
+  title: "Scale Generator — technische Skalen für Messgeräte, Frontplatten und CNC",
   description:
-    "Präzise technische Skalen parametrisch erzeugen und als SVG, DXF, STL oder OBJ exportieren.",
+    "Parametrische Skalen erzeugen und als SVG, DXF, STL und OBJ exportieren. Kreis, Halbkreis, Kreisbogen und gerade Linie — die Exporte sind exakt die Vorschau.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="de" className={`${GeistSans.variable} ${GeistMono.variable} dark`}>
-      <body className="min-h-screen bg-background text-foreground">
-        <TooltipProvider delayDuration={250} skipDelayDuration={100}>
-          {children}
-        </TooltipProvider>
+    <html lang="de">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} bg-[var(--surface-0)] text-[var(--text)] antialiased`}
+      >
+        {children}
       </body>
     </html>
   );
